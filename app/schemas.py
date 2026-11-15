@@ -19,3 +19,4 @@ class HeartFeatures(BaseModel):
 
 class PredictionResponse(BaseModel):
     heart_disease: bool
+    probability: float

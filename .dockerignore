@@ -1,4 +1,6 @@
 .git
+.venv
+.idea
 __pycache__
 data
 train.py

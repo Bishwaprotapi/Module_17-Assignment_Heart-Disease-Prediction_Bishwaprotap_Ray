@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Heart Disease Prediction</title>
+<style>
+  :root { --bg:#f4f6fb; --card:#fff; --text:#1d2433; --muted:#667085; --line:#d9deea; --accent:#d6336c; --ok:#2b8a3e; }
+  * { box-sizing: border-box; }
+  body { margin:0; font-family: system-ui, Segoe UI, Roboto, sans-serif; background:var(--bg); color:var(--text); }
+  main { max-width: 880px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { margin: 0 0 4px; font-size: 1.6rem; }
+  p.sub { margin: 0 0 20px; color: var(--muted); }
+  form, #result { background: var(--card); border:1px solid var(--line); border-radius:12px; padding:20px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap:14px 18px; }
+  label { display:block; font-size:.85rem; font-weight:600; margin-bottom:4px; }
+  small { color:var(--muted); font-weight:400; }
+  input, select { width:100%; padding:9px 10px; border:1px solid var(--line); border-radius:8px; font-size:1rem; background:#fff; color:var(--text); }
+  input:focus, select:focus { outline:2px solid var(--accent); border-color:transparent; }
+  .actions { display:flex; gap:10px; margin-top:20px; flex-wrap:wrap; }
+  button { padding:10px 18px; border:0; border-radius:8px; font-size:1rem; cursor:pointer; background:var(--accent); color:#fff; }
+  button.secondary { background:#e9ecf5; color:var(--text); }
+  button:disabled { opacity:.6; cursor:wait; }
+  #result { margin-top:20px; display:none; text-align:center; }
+  #result h2 { margin:0 0 6px; }
+  #result.pos h2 { color:var(--accent); } #result.neg h2 { color:var(--ok); } #result.err h2 { color:#b42318; }
+  #result p { margin:4px 0; color:var(--muted); }
+  footer { margin-top:20px; font-size:.8rem; color:var(--muted); text-align:center; }
+  footer a { color:var(--accent); }
+</style>
+</head>
+<body>
+<main>
+  <h1>&#10084; Heart Disease Prediction</h1>
+  <p class="sub">Enter the patient's details and the model will predict presence or absence of heart disease.</p>
+
+  <form id="form">
+    <div class="grid">
+      <div><label for="age">Age <small>(years)</small></label>
+        <input id="age" name="age" type="number" min="1" max="120" value="52" required></div>
+      <div><label for="sex">Sex</label>
+        <select id="sex" name="sex"><option value="1">Male</option><option value="0">Female</option></select></div>
+      <div><label for="cp">Chest pain type</label>
+        <select id="cp" name="cp">
+          <option value="0">0 - Typical angina</option><option value="1">1 - Atypical angina</option>
+          <option value="2">2 - Non-anginal pain</option><option value="3">3 - Asymptomatic</option></select></div>
+      <div><label for="trestbps">Resting blood pressure <small>(mm Hg)</small></label>
+        <input id="trestbps" name="trestbps" type="number" min="50" max="300" value="125" required></div>
+      <div><label for="chol">Serum cholesterol <small>(mg/dl)</small></label>
+        <input id="chol" name="chol" type="number" min="50" max="700" value="212" required></div>
+      <div><label for="fbs">Fasting blood sugar &gt; 120 mg/dl</label>
+        <select id="fbs" name="fbs"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div><label for="restecg">Resting ECG</label>
+        <select id="restecg" name="restecg">
+          <option value="0">0 - Normal</option><option value="1" selected>1 - ST-T abnormality</option>
+          <option value="2">2 - Left ventricular hypertrophy</option></select></div>
+      <div><label for="thalach">Max heart rate achieved <small>(bpm)</small></label>
+        <input id="thalach" name="thalach" type="number" min="50" max="250" value="168" required></div>
+      <div><label for="exang">Exercise induced angina</label>
+        <select id="exang" name="exang"><option value="0">No</option><option value="1">Yes</option></select></div>
+      <div><label for="oldpeak">ST depression (oldpeak)</label>
+        <input id="oldpeak" name="oldpeak" type="number" min="0" max="10" step="0.1" value="1.0" required></div>
+      <div><label for="slope">Slope of peak exercise ST</label>
+        <select id="slope" name="slope">
+          <option value="0">0</option><option value="1">1</option><option value="2" selected>2</option></select></div>
+      <div><label for="ca">Major vessels colored <small>(0-4)</small></label>
+        <select id="ca" name="ca"><option>0</option><option>1</option><option selected>2</option><option>3</option><option>4</option></select></div>
+      <div><label for="thal">Thalassemia</label>
+        <select id="thal" name="thal">
+          <option value="0">0</option><option value="1">1 - Fixed defect</option>
+          <option value="2">2 - Normal</option><option value="3" selected>3 - Reversible defect</option></select></div>
+    </div>
+    <div class="actions">
+      <button type="submit" id="submit">Predict</button>
+      <button type="button" class="secondary" id="reset">Reset</button>
+    </div>
+  </form>
+
+  <div id="result" aria-live="polite"><h2></h2><p id="detail"></p></div>
+
+  <footer>Educational demo only, not medical advice. &middot; <a href="/docs">API docs (Swagger)</a></footer>
+</main>
+
+<script>
+  const form = document.getElementById("form");
+  const result = document.getElementById("result");
+  const btn = document.getElementById("submit");
+  const defaults = Object.fromEntries(new FormData(form));
+
+  function show(cls, title, detail) {
+    result.className = cls; result.style.display = "block";
+    result.querySelector("h2").textContent = title;
+    document.getElementById("detail").textContent = detail;
+  }
+
+  form.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const data = Object.fromEntries(new FormData(form));
+    for (const k in data) data[k] = Number(data[k]);
+    btn.disabled = true;
+    try {
+      const res = await fetch("/predict", {
+        method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify(data)
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        const msg = Array.isArray(err.detail)
+          ? err.detail.map(d => d.loc.slice(-1) + ": " + d.msg).join("; ") : "Request failed (" + res.status + ")";
+        return show("err", "Invalid input", msg);
+      }
+      const out = await res.json();
+      show(out.heart_disease ? "pos" : "neg",
+           out.heart_disease ? "Heart disease likely" : "No heart disease detected",
+           "Model probability of heart disease: " + (out.probability * 100).toFixed(1) + "%");
+    } catch (_) {
+      show("err", "Server unreachable", "Could not contact the API.");
+    } finally { btn.disabled = false; }
+  });
+
+  document.getElementById("reset").addEventListener("click", () => {
+    for (const [k, v] of Object.entries(defaults)) form.elements[k].value = v;
+    result.style.display = "none";
+  });
+</script>
+</body>
+</html>
