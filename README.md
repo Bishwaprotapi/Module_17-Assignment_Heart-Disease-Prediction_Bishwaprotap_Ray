@@ -25,8 +25,14 @@ curl -X POST http://localhost:8000/predict -H "Content-Type: application/json" \
   -d '{"age":52,"sex":1,"cp":0,"trestbps":125,"chol":212,"fbs":0,"restecg":1,"thalach":168,"exang":0,"oldpeak":1.0,"slope":2,"ca":2,"thal":3}'
 ```
 
-## Retrain
-`pip install -r requirements.txt && python train.py`
+## Run / retrain locally (Python 3.12, `.venv`)
+```
+py -3.12 -m venv .venv
+.venv\Scripts\activate
+pip install -r requirements.txt
+python train.py
+uvicorn app.main:app --reload
+```
 
 ## Deploy on Render
 New Web Service → connect this GitHub repo → Language: Docker (root Dockerfile).
